@@ -1,10 +1,8 @@
 fn main() {
-    let data = [22, 12, 13, 17, 18];
-    for i in 0..5 {
-        data.i = floored_half(data.i);
-    }
+    let mut data = [22, 12, 13, 17, 18];
+    data.iter_mut().for_each(|val| *val = floored_half(*val));
 }
 
-fn floored_half(data: i32) {
+fn floored_half(data: i32) -> i32 {
     data / 2
 }
