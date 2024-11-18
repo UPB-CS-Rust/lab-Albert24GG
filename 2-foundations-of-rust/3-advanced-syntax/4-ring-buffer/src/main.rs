@@ -1,7 +1,6 @@
 /// One way to implement a queue is to use a linked list; however, that requires a lot of dynamic memory manipulation to add/remove individual items.
 /// A more low-level approach is to use a circular buffer: the compromise is that the capacity of the queue is then "fixed". For a background on circular buffers,
 /// you can consult https://en.wikipedia.org/wiki/Circular_buffer
-
 // A partial implementation is provided below; please finish it and add some more methods; please remember to run 'cargo fmt' and 'cargo clippy' after
 // every step to get feedback from the rust compiler!
 
@@ -17,19 +16,23 @@
 // 5) EXTRA EXERCISES:
 //  - add a method "has_room" so that "queue.has_room()" is true if and only if writing to the queue will succeed
 //  - add a method "peek" so that "queue.peek()" returns the same thing as "queue.read()", but leaves the element in the queue
+use std::ops::Not;
 
 struct RingBuffer {
-    data: [u8; 16],
+    data: Box<[u8]>,
+    // data: [u8; 16],
     start: usize,
     end: usize,
+    size: usize,
 }
 
 impl RingBuffer {
-    fn new() -> RingBuffer {
+    fn new(size: usize) -> RingBuffer {
         RingBuffer {
-            data: [0; 16],
+            data: make_box(size),
             start: 0,
             end: 0,
+            size,
         }
     }
 
@@ -37,23 +40,36 @@ impl RingBuffer {
     /// it returns None if the queue was empty
 
     fn read(&mut self) -> Option<u8> {
-        todo!()
+        match self.peek() {
+            None => None,
+            Some(x) => {
+                self.start = (self.start + 1) % self.data.len();
+                Some(x)
+            }
+        }
     }
 
     /// This function tries to put `value` on the queue; and returns true if this succeeds
     /// It returns false if writing to the queue failed (which can happen if there is not enough room)
 
     fn write(&mut self, value: u8) -> bool {
-        self.data[self.end] = value;
-        let pos = (self.end + 1) % self.data.len();
-        if pos == self.start {
-            // the buffer can hold no more new data
-            false
-        } else {
-            self.end = pos;
-
-            true
+        if !self.has_room() {
+            return false;
         }
+        self.data[self.end] = value;
+        self.end = (self.end + 1) % self.data.len();
+        true
+    }
+
+    fn has_room(&self) -> bool {
+        (self.end + 1) % self.data.len() != self.start
+    }
+
+    fn peek(&self) -> Option<u8> {
+        self.start
+            .eq(&self.end)
+            .not()
+            .then_some(self.data[self.start])
     }
 }
 
@@ -75,7 +91,7 @@ impl Iterator for RingBuffer {
 }
 
 fn main() {
-    let mut queue = RingBuffer::new();
+    let mut queue = RingBuffer::new(6);
     assert!(queue.write(1));
     assert!(queue.write(2));
     assert!(queue.write(3));
